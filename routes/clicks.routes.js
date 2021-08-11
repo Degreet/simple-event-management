@@ -4,26 +4,30 @@ const getClicksCount = require('../core/getClicksCount')
 const randomstring = require('randomstring')
 const router = Router()
 
-const supportActions = [1, -1]
+const { supportedActions, rules } = require('../global')
 
 router.post('/action', authEventMiddleware, async (req, resp) => {
 	const action = +req.body.action
-	if (isNaN(action) || !supportActions.includes(action)) return
+	if (isNaN(action) || !supportedActions.includes(action)) return
 
 	const { user } = req
 	const { events } = user
-	let clicks = getClicksCount(events)
-
-	if (action === -1 && clicks <= 0) {
-		return resp.status(418).json({
-			success: false,
-			message: 'Нельзя добавить',
-		})
-	}
 
 	const id = randomstring.generate(32)
 	events.push({ id, action, date: Date.now() })
-	clicks = getClicksCount(events)
+	const clicks = getClicksCount(events)
+
+	for (const rule of rules) {
+		const check = rule(clicks)
+
+		if (!check) {
+			return resp.json({
+				success: false,
+				message: 'Нельзя добавить',
+			})
+		}
+	}
+
 	await user.save()
 
 	return resp.json({
@@ -38,19 +42,20 @@ router.post('/cancel', authEventMiddleware, async (req, resp) => {
 	if (!id) return
 
 	const { user } = req
-	const eventForCancel = user.events.find((ev) => ev.id === id)
-	const eventAction = eventForCancel.action
-	let clicks = getClicksCount(user.events)
+	user.events = user.events.filter((ev) => ev.id !== id)
+	const clicks = getClicksCount(user.events)
 
-	if (eventAction === 1 && clicks - eventAction < 0) {
-		return resp.status(418).json({
-			success: false,
-			message: 'Нельзя отменить',
-		})
+	for (const rule of rules) {
+		const check = rule(clicks)
+
+		if (!check) {
+			return resp.json({
+				success: false,
+				message: 'Нельзя изменить',
+			})
+		}
 	}
 
-	user.events = user.events.filter((ev) => ev.id !== id)
-	clicks = getClicksCount(user.events)
 	await user.save()
 
 	return resp.json({
