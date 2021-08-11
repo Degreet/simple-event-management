@@ -4,7 +4,7 @@ const getClicksCount = require('../core/getClicksCount')
 const router = Router()
 
 router.get('/', authEventMiddleware, (req, resp) => {
-	const events = req.event.events
+	const events = req.user.events
 	const clicks = getClicksCount(events)
 
 	resp.render('index', {

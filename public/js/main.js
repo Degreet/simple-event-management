@@ -35,7 +35,10 @@ async function cancelAction(id) {
 	turnBtns(false)
 
 	const data = await request('/api/clicks/cancel', 'POST', { id })
-	if (!data || !data.success) return
+
+	if (!data || !data.success) {
+		return alert(data.message || 'Ошибка')
+	}
 
 	clicks = data.clicks
 	events = data.events

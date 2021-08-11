@@ -5,4 +5,4 @@ const model = mongoose.Schema({
 	dateCreate: { type: Date, default: Date.now },
 })
 
-module.exports = mongoose.model('events', model)
+module.exports = mongoose.model('User', model)

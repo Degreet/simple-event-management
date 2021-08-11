@@ -10,12 +10,12 @@ router.post('/action', authEventMiddleware, async (req, resp) => {
 	const action = +req.body.action
 	if (isNaN(action) || !supportActions.includes(action)) return
 
-	const { event } = req
-	const { events } = event
+	const { user } = req
+	const { events } = user
 
 	const id = randomstring.generate(32)
 	events.push({ id, action, date: Date.now() })
-	await event.save()
+	await user.save()
 
 	const clicks = getClicksCount(events)
 
@@ -30,15 +30,25 @@ router.post('/cancel', authEventMiddleware, async (req, resp) => {
 	const { id } = req.body
 	if (!id) return
 
-	const { event } = req
-	event.events = event.events.filter((ev) => ev.id !== id)
-	await event.save()
+	const { user } = req
+	const eventForCancel = user.events.find((ev) => ev.id === id)
+	const eventAction = eventForCancel.action
+	let clicks = getClicksCount(user.events)
 
-	const clicks = getClicksCount(event.events)
+	if (eventAction === 1 && clicks - eventAction < 0) {
+		return resp.status(418).json({
+			success: false,
+			message: 'Нельзя отменить',
+		})
+	}
+
+	user.events = user.events.filter((ev) => ev.id !== id)
+	clicks = getClicksCount(user.events)
+	await user.save()
 
 	return resp.json({
 		success: true,
-		events: event.events,
+		events: user.events,
 		clicks,
 	})
 })

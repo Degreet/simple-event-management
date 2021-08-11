@@ -1,30 +1,28 @@
-const Events = require('../models/Events')
+const User = require('../models/User')
 const { Types } = require('mongoose')
 
-const hourInMs = 2.77778e-7
-
-module.exports = async function authEventMiddleware(req, resp, next) {
+module.exports = async function authEventMiddleware(req, _, next) {
 	const fail = async () => {
-		const event = new Events()
-		await event.save()
+		const user = new User()
+		await user.save()
 
-		const { _id } = event
+		const { _id } = user
 		if (!_id) return
 
-		req.cookies.set('event_id', _id.toString())
-		req.event = event
+		req.cookies.set('user_id', _id.toString())
+		req.user = user
 		return next()
 	}
 
 	try {
-		const eventId = req.cookies.get('event_id')
-		if (!eventId) return fail()
+		const userId = req.cookies.get('user_id')
+		if (!userId) return fail()
 
-		const _id = Types.ObjectId(eventId)
-		const event = await Events.findOne({ _id })
-		if (!event) return
+		const _id = Types.ObjectId(userId)
+		const user = await User.findOne({ _id })
+		if (!user) return
 
-		req.event = event
+		req.user = user
 		return next()
 	} catch {
 		return fail()
