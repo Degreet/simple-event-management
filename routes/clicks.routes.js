@@ -12,12 +12,19 @@ router.post('/action', authEventMiddleware, async (req, resp) => {
 
 	const { user } = req
 	const { events } = user
+	let clicks = getClicksCount(events)
+
+	if (action === -1 && clicks <= 0) {
+		return resp.status(418).json({
+			success: false,
+			message: 'Нельзя добавить',
+		})
+	}
 
 	const id = randomstring.generate(32)
 	events.push({ id, action, date: Date.now() })
+	clicks = getClicksCount(events)
 	await user.save()
-
-	const clicks = getClicksCount(events)
 
 	return resp.json({
 		success: true,

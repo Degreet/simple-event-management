@@ -53,11 +53,14 @@ async function goAction(action) {
 	turnBtns(false)
 
 	const data = await request('/api/clicks/action', 'POST', { action })
-	if (!data || !data.success) return
 
-	clicks = data.clicks
-	events = data.events
-	render()
+	if (!data || !data.success) {
+		alert(data.message || 'Ошибка')
+	} else {
+		clicks = data.clicks
+		events = data.events
+		render()
+	}
 
 	// turn on button
 	turnBtns(true)
